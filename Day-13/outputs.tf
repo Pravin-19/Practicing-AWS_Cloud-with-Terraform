@@ -29,3 +29,15 @@ output "total_cost" {
 output "avg_cost" {
   value = local.avg_cost
 }
+
+output "data_vpc" {
+  value = data.aws_vpc.default_vpc
+}
+
+output "aws-ami" {
+  value = data.aws_ami.ami
+}
+
+output "ec2" {
+  value = aws_instance.example
+}

@@ -1,188 +1,77 @@
-##
-# Function --> which makes our life easier 
-# No custom functions can be created 
+# Day 13: Terraform Data Sources with AWS
 
+This lesson demonstrates how to use Terraform data sources to reference existing infrastructure in AWS. We will provision an EC2 instance into a pre-existing VPC and subnet.
 
-# Validation function
+## Scenario
 
-# Terraform Functions Learning Guide - AWS Edition (Day 11-12)
+We have a "shared" VPC and subnet that were created by another team or process. Our task is to launch a new EC2 instance into this existing network infrastructure without managing the VPC or subnet with our Terraform configuration.
 
-## 📚 Overview
+### Pre-existing Infrastructure
 
-Welcome to the Terraform Functions comprehensive learning guide! This two-day module covers Terraform's built-in functions through 12 hands-on assignments. Each assignment focuses on specific functions and real-world use cases.
+The following resources are assumed to exist in your AWS account:
 
----
+*   **VPC:** with the tag `Name` = `shared-network-vpc`
+*   **Subnet:** with the tag `Name` = `shared-primary-subnet`
 
-## Console Commands
+### Terraform Configuration (`main.tf`)
 
-Practice these fundamental commands in `terraform console` before starting the assignments:
+Our Terraform code will:
 
-```hcl
-# Basic String Manipulation
-lower("HELLO WORLD")
-max(5, 12, 9)
-trim("  hello  ")
-chomp("hello\n")
-reverse(["a", "b", "c"])
-```
+1.  **Define Data Sources:**
+    *   `data "aws_vpc" "shared"`: This block tells Terraform to find a VPC with the tag `Name` set to `shared-network-vpc`.
+    *   `data "aws_subnet" "shared"`: This block finds a subnet with the tag `Name` set to `shared-primary-subnet` within the VPC found by the previous data source.
+    *   `data "aws_ami" "amazon_linux_2"`: This block finds the latest Amazon Linux 2 AMI to use for our EC2 instance.
 
-## 📋 Assignments Overview
+2.  **Use Data Source Outputs:**
+    *   The `aws_instance` resource uses `data.aws_subnet.shared.id` to launch into the existing subnet.
+    *   The `aws_instance` resource also uses `data.aws_ami.amazon_linux_2.id` for the AMI.
 
-| # | Assignment | Functions | Difficulty | AWS Resources |
-|---|------------|-----------|------------|---------------|
-| 1 | Project Naming | `lower`, `replace` | ⭐ | Resource Group |
-| 2 | Resource Tagging | `merge` | ⭐ | VPC |
-| 3 | S3 Bucket Naming | `substr`, `replace`, `lower` | ⭐⭐ | S3 Bucket |
-| 4 | Security Group Ports | `split`, `join`, `for` | ⭐⭐ | Security Group |
-| 5 | Environment Lookup | `lookup` | ⭐⭐ | EC2 Instance |
-| 6 | Instance Validation | `length`, `can`, `regex` | ⭐⭐⭐ | EC2 Instance |
-| 7 | Backup Configuration | `endswith`, `sensitive` | ⭐⭐ | None |
-| 8 | File Path Processing | `fileexists`, `dirname` | ⭐⭐ | None |
-| 9 | Location Management | `toset`, `concat` | ⭐ | None |
-| 10 | Cost Calculation | `abs`, `max`, `sum` | ⭐⭐ | None |
-| 11 | Timestamp Management | `timestamp`, `formatdate` | ⭐⭐ | S3 Bucket |
-| 12 | File Content Handling | `file`, `jsondecode` | ⭐⭐⭐ | Secrets Manager |
+## How to Run This Demo
 
----
+### 1. Create the Pre-existing Infrastructure
 
-## 🚀 Quick Start
+First, we need to simulate the creation of the shared network resources.
 
 ```bash
-# Navigate to directory
-cd /home/baivab/repos/Terraform-Full-Course-Aws/lessons/day11-12
-
-# Initialize
+cd lessons/day13/code/setup
 terraform init
-
-# Start with Assignment 1 (already uncommented)
-terraform plan
-terraform apply -auto-approve
-
-# View outputs
-terraform output
-
-# Cleanup
-terraform destroy -auto-approve
+terraform apply
 ```
 
----
+This will create a VPC and a subnet.
 
-## 📖 Function Categories
+### 2. Provision the EC2 Instance
 
-### String Functions
-`lower()`, `upper()`, `replace()`, `substr()`, `trim()`, `split()`, `join()`, `chomp()`
+Now, we'll run the main Terraform configuration that uses data sources.
 
-### Numeric Functions
-`abs()`, `max()`, `min()`, `ceil()`, `floor()`, `sum()`
- 
-### Collection Functions
-`length()`, `concat()`, `merge()`, `reverse()`, `toset()`, `tolist()`
+```bash
+cd ../.. # Go back to the day13/code directory
+terraform init
+terraform plan
+```
 
-### Type Conversion
-`tonumber()`, `tostring()`, `tobool()`, `toset()`, `tolist()`
+**Expected Plan Output:** The plan should show that Terraform will create **1 new resource**: an `aws_instance`. It should **not** show any changes to the VPC or subnet.
 
-### File Functions
-`file()`, `fileexists()`, `dirname()`, `basename()`
+```bash
+terraform apply
+```
 
-### Date/Time Functions
-`timestamp()`, `formatdate()`, `timeadd()`art
+### 3. Verification
 
-### Validation Functions
-`can()`, `regex()`, `contains()`, `startswith()`, `endswith()`
+1.  Go to the AWS EC2 console.
+2.  Find the instance named `day13-instance`.
+3.  Check its "Networking" details. You will see that it is in the `shared-network-vpc` and `shared-primary-subnet`, confirming that the data sources worked correctly.
 
-### Lookup Functions
-`lookup()`, `element()`, `index()`
+### 4. Cleanup
 
----
+To destroy the resources created in this lesson:
 
-## 📁 Files
+```bash
+# Destroy the instance
+cd lessons/day13/code
+terraform destroy
 
-- `README.md` - This overview
-- `DEMO_GUIDE.md` - **Step-by-step demo instructions**
-- `provider.tf` - AWS provider setup
-- `backend.tf` - S3 backend (optional)
-- `variables.tf` - All assignment variables
-- `main.tf` - All 12 assignments (commented structure)
-- `outputs.tf` - Assignment outputs (commented)
-
-
----
-
-## ✅ Assignment Summary
-
-### Assignment 1: Project Naming ⭐
-Transform "Project ALPHA Resource" → "project-alpha-resource"
-
-**Functions:** `lower()`, `replace()`  
-**Status:** ✅ Active by default
-
-### Assignment 2: Resource Tagging ⭐
-Merge default and environment tags
-
-**Function:** `merge()`
-
-### Assignment 3: S3 Bucket Naming ⭐⭐
-Sanitize bucket names for AWS compliance
-
-**Functions:** `substr()`, `replace()`, `lower()`
-
-### Assignment 4: Security Group Ports ⭐⭐
-Transform "80,443,8080" into security group rules
-
-**Functions:** `split()`, `join()`, `for`
-
-### Assignment 5: Environment Lookup ⭐⭐
-Select instance size by environment
-
-**Function:** `lookup()`
-
-### Assignment 6: Instance Validation ⭐⭐⭐
-Validate instance type format
-
-**Functions:** `length()`, `can()`, `regex()`
-
-### Assignment 7: Backup Configuration ⭐⭐
-Validate names and handle sensitive data
-
-**Functions:** `endswith()`, `sensitive`
-
-### Assignment 8: File Path Processing ⭐⭐
-Check file existence and extract paths
-
-**Functions:** `fileexists()`, `dirname()`
-
-### Assignment 9: Location Management ⭐
-Combine regions and remove duplicates
-
-**Functions:** `toset()`, `concat()`
-
-### Assignment 10: Cost Calculation ⭐⭐
-Process costs with credits
-
-**Functions:** `abs()`, `max()`, `sum()`
-
-### Assignment 11: Timestamp Management ⭐⭐
-Format timestamps for resources and tags
-
-**Functions:** `timestamp()`, `formatdate()`
-
-### Assignment 12: File Content Handling ⭐⭐⭐
-Read JSON config and store in Secrets Manager
-
-**Functions:** `file()`, `jsondecode()`, `jsonencode()`
-
----
-
-
----
-
-## 📚 Resources
-
-- [Terraform Functions Docs](https://www.terraform.io/language/functions)
-- [Terraform Console](https://www.terraform.io/cli/commands/console)
-- [AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-
----
-
-
-**Happy Learning! 🎉**
+# Destroy the shared VPC and subnet
+cd setup
+terraform destroy
+```
